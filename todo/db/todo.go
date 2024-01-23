@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 )
 
@@ -27,7 +28,8 @@ type DbMap map[int]ToDoItem
 //	   	 (they are lowercase).  Describe why you think this is
 //		 a good design decision.
 //
-// ANSWER: <GOES HERE>
+// ANSWER: Defining fields with lowercase means that they are not accessible outisde the package.
+// This is a good design decision because it prevents the user from accessing the fields directly
 type ToDo struct {
 	toDoMap    DbMap
 	dbFileName string
@@ -102,9 +104,22 @@ func (t *ToDo) RestoreDB() error {
 	//				defer srcFile.Close()
 
 	// TODO: Implement this function
-	fmt.Println("RestoreDB() is not implemented")
-	fmt.Println("DB File:", dbFileName)
-	fmt.Println("Backup DB File:", backupFileName)
+	srcFile, err := os.Open(backupFileName)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	targetFile, err := os.Create(dbFileName)
+	if err != nil {
+		return err
+	}
+	defer targetFile.Close()
+
+	_, err = io.Copy(targetFile, srcFile)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -137,8 +152,19 @@ func (t *ToDo) AddItem(item ToDoItem) error {
 	//If everything there are no errors, this function should return nil
 	//at the end to indicate that the item was properly added to the
 	//database.
-
-	return errors.New("AddItem() is currently not implemented")
+	loadError := t.loadDB()
+	if loadError != nil {
+		return loadError
+	}
+	if _, ok := t.toDoMap[item.Id]; ok {
+		return errors.New("item already exists")
+	}
+	t.toDoMap[item.Id] = item
+	err := t.saveDB()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // DeleteItem accepts an item id and removes it from the DB.
@@ -166,8 +192,19 @@ func (t *ToDo) DeleteItem(id int) error {
 	//appropriate.  If everything there are no errors, this function should
 	//return nil at the end to indicate that the item was properly deleted
 	//from the database.
-
-	return errors.New("DeleteItem() is currently not implemented")
+	loadError := t.loadDB()
+	if loadError != nil {
+		return loadError
+	}
+	if _, ok := t.toDoMap[id]; !ok {
+		return errors.New("item not in db")
+	}
+	delete(t.toDoMap, id)
+	saveError := t.saveDB()
+	if saveError != nil {
+		return saveError
+	}
+	return nil
 }
 
 // UpdateItem accepts a ToDoItem and updates it in the DB.
@@ -195,8 +232,19 @@ func (t *ToDo) UpdateItem(item ToDoItem) error {
 	//any errors, return them, as appropriate.  If everything there are
 	//no errors, this function should return nil at the end to indicate
 	//that the item was properly updated in the database.
-
-	return errors.New("UpdateItem() is currently not implemented")
+	loadError := t.loadDB()
+	if loadError != nil {
+		return loadError
+	}
+	if _, ok := t.toDoMap[item.Id]; !ok {
+		return errors.New("item not found in db to update")
+	}
+	t.toDoMap[item.Id] = item
+	err := t.saveDB()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // GetItem accepts an item id and returns the item from the DB.
@@ -225,8 +273,14 @@ func (t *ToDo) GetItem(id int) (ToDoItem, error) {
 	//no errors, this function should return the item requested and nil
 	//as the error value the end to indicate that the item was
 	//properly returned from the database.
-
-	return ToDoItem{}, errors.New("GetItem() is currently not implemented")
+	loadError := t.loadDB()
+	if loadError != nil {
+		return ToDoItem{}, loadError
+	}
+	if _, ok := t.toDoMap[id]; !ok {
+		return ToDoItem{}, errors.New("item not found in db")
+	}
+	return t.toDoMap[id], nil
 }
 
 // GetAllItems returns all items from the DB.  If successful it
@@ -250,8 +304,15 @@ func (t *ToDo) GetAllItems() ([]ToDoItem, error) {
 	//use the built in append() function in go to add an item in a slice.
 	//Finally, if there were no errors along the way, return the slice
 	//and nil as the error value.
-
-	return nil, errors.New("GetAllItems() is currently not implemented")
+	loadError := t.loadDB()
+	if loadError != nil {
+		return nil, loadError
+	}
+	var toDoList []ToDoItem
+	for _, item := range t.toDoMap {
+		toDoList = append(toDoList, item)
+	}
+	return toDoList, nil
 }
 
 // PrintItem accepts a ToDoItem and prints it to the console
