@@ -374,7 +374,18 @@ func (t *ToDo) ChangeItemDoneStatus(id int, value bool) error {
 	//in the DB (after the status is changed).  If there are any
 	//errors along the way, return them.  If everything is successful
 	//return nil at the end to indicate that the item was properly
-
+	loadError := t.loadDB()
+	if loadError != nil {
+		return loadError
+	}
+	if _, ok := t.toDoMap[id]; !ok {
+		return errors.New("item not found in db")
+	}
+	// //var item ToDoItem
+	// //item, err := t.GetItem(id)
+	// if err != nil {
+	// 	return err
+	// }
 	return errors.New("ChangeItemDoneStatus() is currently not implemented")
 }
 

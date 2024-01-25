@@ -73,11 +73,15 @@ func TestAddHardCodedItem(t *testing.T) {
 	//I will get you started, uncomment the lines below to add to the DB
 	//and ensure no errors:
 	//---------------------------------------------------------------
-	//err := DB.AddItem(item)
-	//assert.NoError(t, err, "Error adding item to DB")
+	err := DB.AddItem(item)
+	assert.NoError(t, err, "Error adding item to DB")
 
 	//TODO: Now finish the test case by looking up the item in the DB
 	//and making sure it matches the item that you put in the DB above
+	itemFromDb, err := DB.GetItem(item.Id)
+	assert.NoError(t, err, "Error while getting the item from the DB")
+	t.Log("itemFromDb: ", itemFromDb)
+	assert.Equal(t, item, itemFromDb, "Item added to the DB successfully")
 }
 
 func TestAddRandomStructItem(t *testing.T) {
@@ -99,9 +103,7 @@ func TestAddRandomItem(t *testing.T) {
 		Title:  fake.JobTitle(),
 		IsDone: fake.Bool(),
 	}
-
 	t.Log("Testing Adding an Item with Random Fields: ", item)
-
 }
 
 // TODO: Please delete this test from your submission, it does not do anything
@@ -113,6 +115,13 @@ func TestAddPlaceholderTest(t *testing.T) {
 	t.Skip("Placeholder test not implemented yet")
 }
 
-//TODO: Create additional tests to showcase the correct operation of your program
-//for example getting an item, getting all items, updating items, and so on. Be
-//creative here.
+// TODO: Create additional tests to showcase the correct operation of your program
+// for example getting an item, getting all items, updating items, and so on. Be
+// creative here.
+func TestGetAllItems(t *testing.T) {
+	var itemsFromDb []db.ToDoItem
+	var err error
+	itemsFromDb, err = DB.GetAllItems()
+	assert.NoError(t, err, "Error while retreiving all items from DB")
+	t.Log("itemsFromDb: ", itemsFromDb)
+}
